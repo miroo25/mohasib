@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
-import { Article } from "@/api/entities";
-import { Job } from "@/api/entities";
-import { Software } from "@/api/entities";
+import { supabase } from "../src/supabaseClient";
 import { Link } from "react-router-dom";
 
 export default function Home() {
@@ -10,9 +8,9 @@ export default function Home() {
   const [softwares, setSoftwares] = useState([]);
 
   useEffect(() => {
-    Article.filter({ is_published: true }, "-created_date", 3).then(setArticles);
-    Job.filter({ is_active: true }, "-created_date", 4).then(setJobs);
-    Software.filter({ is_featured: true, is_active: true }, "-created_date", 4).then(setSoftwares);
+    supabase.from("articles").select("*").eq("is_published", true).order("created_at", { ascending: false }).limit(3).then(({ data }) => setArticles(data || []));
+    supabase.from("jobs").select("*").eq("is_active", true).order("created_at", { ascending: false }).limit(4).then(({ data }) => setJobs(data || []));
+    supabase.from("softwares").select("*").eq("is_featured", true).eq("is_active", true).order("created_at", { ascending: false }).limit(4).then(({ data }) => setSoftwares(data || []));
   }, []);
 
   const pricingColors = {
@@ -24,7 +22,6 @@ export default function Home() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-gray-50 font-sans" style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
-      {/* Header */}
       <header className="bg-gradient-to-l from-blue-900 to-blue-700 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -45,7 +42,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero */}
       <section className="bg-gradient-to-bl from-blue-800 to-blue-600 text-white py-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">مرحباً بكم في <span className="text-yellow-300">محاسبون</span></h2>
@@ -53,108 +49,74 @@ export default function Home() {
           <div className="flex gap-3 justify-center flex-wrap">
             <Link to="/articles" className="bg-yellow-400 text-blue-900 px-7 py-3 rounded-full font-bold hover:bg-yellow-300 transition-colors shadow-lg">📰 المقالات</Link>
             <Link to="/jobs" className="bg-white text-blue-800 px-7 py-3 rounded-full font-bold hover:bg-blue-50 transition-colors shadow-lg">💼 الوظائف</Link>
-            <Link to="/softwares" className="bg-indigo-500 text-white px-7 py-3 rounded-full font-bold hover:bg-indigo-400 transition-colors shadow-lg">💻 البرامج</Link>
+            <Link to="/softwares" className="bg-blue-500 text-white px-7 py-3 rounded-full font-bold hover:bg-blue-400 transition-colors shadow-lg">🛠 البرامج</Link>
           </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-4 gap-4 text-center">
-          <div><div className="text-3xl font-bold text-blue-700">+500</div><div className="text-gray-500 text-sm">مقال متخصص</div></div>
-          <div><div className="text-3xl font-bold text-green-600">+200</div><div className="text-gray-500 text-sm">وظيفة متاحة</div></div>
-          <div><div className="text-3xl font-bold text-indigo-600">+50</div><div className="text-gray-500 text-sm">برنامج محاسبي</div></div>
-          <div><div className="text-3xl font-bold text-yellow-500">+10K</div><div className="text-gray-500 text-sm">محاسب مسجل</div></div>
-        </div>
-      </section>
-
-      {/* Latest Articles */}
       <section className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-gray-800">📰 أحدث المقالات</h3>
-          <Link to="/articles" className="text-blue-600 hover:underline text-sm font-medium">عرض الكل ←</Link>
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-blue-900">📰 أحدث المقالات</h3>
+          <Link to="/articles" className="text-blue-600 hover:underline text-sm">عرض الكل</Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {articles.map(article => (
-            <Link to={`/articles/${article.id}`} key={article.id} className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow overflow-hidden group">
-              <div className="bg-gradient-to-br from-blue-100 to-blue-200 h-36 flex items-center justify-center">
-                <span className="text-5xl">📄</span>
-              </div>
-              <div className="p-5">
-                <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">{article.category}</span>
-                <h4 className="font-bold text-gray-800 mt-3 mb-2 text-base leading-snug group-hover:text-blue-700 transition-colors line-clamp-2">{article.title}</h4>
-                <p className="text-gray-500 text-sm line-clamp-2">{article.summary}</p>
-                <div className="flex items-center justify-between mt-4 text-xs text-gray-400">
-                  <span>✍️ {article.author}</span>
-                  <span>👁 {article.views?.toLocaleString()}</span>
-                </div>
-              </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {articles.map(a => (
+            <Link to={`/articles/${a.id}`} key={a.id} className="bg-white rounded-2xl shadow hover:shadow-md transition-shadow p-5 block">
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{a.category}</span>
+              <h4 className="font-bold text-gray-800 mt-3 mb-2 line-clamp-2">{a.title}</h4>
+              <p className="text-gray-500 text-sm line-clamp-2">{a.summary}</p>
+              <p className="text-xs text-gray-400 mt-3">✍️ {a.author}</p>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Featured Softwares */}
-      {softwares.length > 0 && (
-        <section className="bg-indigo-50 py-12">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">💻 برامج محاسبية مميزة</h3>
-              <Link to="/softwares" className="text-indigo-600 hover:underline text-sm font-medium">عرض الكل ←</Link>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {softwares.map(s => (
-                <div key={s.id} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow text-center">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mx-auto mb-3 text-2xl">💻</div>
-                  <h4 className="font-bold text-gray-800 text-sm mb-1">{s.name}</h4>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${pricingColors[s.pricing_model] || "bg-gray-100 text-gray-600"}`}>{s.pricing_model}</span>
-                  <div className="mt-2 text-yellow-400 text-xs">{'★'.repeat(Math.round(s.rating || 0))}</div>
-                  {s.website_url && (
-                    <a href={s.website_url} target="_blank" rel="noopener noreferrer" className="mt-2 block text-xs text-indigo-600 hover:underline">زيارة الموقع ↗</a>
-                  )}
-                </div>
-              ))}
-            </div>
+      <section className="bg-blue-50 py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-bold text-blue-900">💼 أحدث الوظائف</h3>
+            <Link to="/jobs" className="text-blue-600 hover:underline text-sm">عرض الكل</Link>
           </div>
-        </section>
-      )}
-
-      {/* Latest Jobs */}
-      <section className="bg-gray-100 py-12">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-2xl font-bold text-gray-800">💼 أحدث الوظائف</h3>
-            <Link to="/jobs" className="text-blue-600 hover:underline text-sm font-medium">عرض الكل ←</Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {jobs.map(job => (
-              <Link to={`/jobs/${job.id}`} key={job.id} className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex gap-4 group">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-2xl">🏢</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{job.title}</h4>
-                  <p className="text-gray-500 text-sm">{job.company}</p>
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">📍 {job.location}</span>
-                    <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full">{job.job_type}</span>
-                    <span className="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded-full">{job.experience_level}</span>
+          <div className="grid md:grid-cols-2 gap-5">
+            {jobs.map(j => (
+              <Link to={`/jobs/${j.id}`} key={j.id} className="bg-white rounded-2xl shadow p-5 hover:shadow-md transition-shadow block">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-bold text-gray-800">{j.title}</h4>
+                    <p className="text-blue-600 text-sm mt-1">🏢 {j.company}</p>
                   </div>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">{j.job_type}</span>
                 </div>
-                <div className="text-sm text-green-600 font-semibold flex-shrink-0">{job.salary_range}</div>
+                <div className="flex gap-3 mt-3 text-xs text-gray-500 flex-wrap">
+                  <span>📍 {j.location}</span>
+                  <span>💰 {j.salary_range}</span>
+                  <span>⏱ {j.experience_level}</span>
+                </div>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-blue-900 text-white py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <div className="text-xl font-bold mb-2">محاسبون</div>
-          <p className="text-blue-300 text-sm">منصة المحاسبيين العرب للمقالات والوظائف والبرامج المهنية</p>
-          <p className="text-blue-400 text-xs mt-4">© 2026 محاسبون - جميع الحقوق محفوظة</p>
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-bold text-blue-900">🛠 برامج مميزة</h3>
+          <Link to="/softwares" className="text-blue-600 hover:underline text-sm">عرض الكل</Link>
         </div>
+        <div className="grid md:grid-cols-4 gap-5">
+          {softwares.map(s => (
+            <a href={s.website_url} target="_blank" rel="noreferrer" key={s.id} className="bg-white rounded-2xl shadow p-5 hover:shadow-md transition-shadow block text-center">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">🖥</div>
+              <h4 className="font-bold text-gray-800 mb-1">{s.name}</h4>
+              <span className={`text-xs px-2 py-1 rounded-full ${pricingColors[s.pricing_model] || "bg-gray-100 text-gray-600"}`}>{s.pricing_model}</span>
+              <p className="text-yellow-500 mt-2 text-sm">{"⭐".repeat(Math.round(s.rating || 0))}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <footer className="bg-blue-900 text-white py-8 text-center">
+        <p className="text-blue-200 text-sm">© 2026 محاسبون - جميع الحقوق محفوظة</p>
       </footer>
     </div>
   );
